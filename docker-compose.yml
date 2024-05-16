@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  flask_app:
+    build:
+      context: ./flask_app
+    networks:
+      - backend
+    depends_on:
+      - database
+    labels:
+      - "traefik.http.routers.flask_app.rule=Host(`flask.localhost`)"
+      - "traefik.port=5000"
+
+  express_app:
+    build:
+      context: ./express_app
+    networks:
+      - backend
+    depends_on:
+      - database
+    labels:
+      - "traefik.http.routers.express_app.rule=Host(`express.localhost`)"
+      - "traefik.port=3000"
+
+  database:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+    networks:
+      - backend
+
+  traefik:
+    image: traefik:v2.4
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    networks:
+      - backend
+    depends_on:
+      - flask_app
+      - express_app
+
+networks:
+  backend:
